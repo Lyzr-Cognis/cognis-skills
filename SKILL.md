@@ -1,5 +1,5 @@
 ---
-name: cognis
+name: cognis-skills
 description: >
   Persistent memory and context for AI agents using Cognis by Lyzr. Use this skill when
   the user mentions "remember this", "what did I work on", "save this for later",
