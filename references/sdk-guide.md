@@ -53,13 +53,13 @@ All API calls can be made directly with curl. See `references/api-reference.md` 
 
 ```bash
 # Save a memory
-curl -X POST https://studio.lyzr.ai/v1/memories \
+curl -X POST https://memory.studio.lyzr.ai/v1/memories \
   -H "Content-Type: application/json" \
   -H "x-api-key: $LYZR_API_KEY" \
   -d '{"messages":[{"role":"user","content":"Remember this"}],"owner_id":"me","agent_id":"my_project"}'
 
 # Search
-curl -X POST https://studio.lyzr.ai/v1/memories/search \
+curl -X POST https://memory.studio.lyzr.ai/v1/memories/search \
   -H "Content-Type: application/json" \
   -H "x-api-key: $LYZR_API_KEY" \
   -d '{"query":"what to remember","owner_id":"me","agent_id":"my_project"}'
@@ -74,7 +74,7 @@ import requests
 import os
 
 API_KEY = os.environ["LYZR_API_KEY"]
-BASE_URL = "https://studio.lyzr.ai"
+BASE_URL = "https://memory.studio.lyzr.ai"
 
 headers = {
     "x-api-key": API_KEY,

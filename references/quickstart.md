@@ -39,7 +39,7 @@ Start a new agent session and try:
 |----------|---------|-------------|
 | `LYZR_API_KEY` | *(required)* | Your Cognis API key |
 | `COGNIS_OWNER_ID` | `$(whoami)` | Override the owner identifier |
-| `COGNIS_API_URL` | `https://studio.lyzr.ai` | Override the API base URL |
+| `COGNIS_API_URL` | `https://memory.studio.lyzr.ai` | Override the API base URL |
 
 ## Troubleshooting
 
@@ -47,6 +47,6 @@ Start a new agent session and try:
 
 **403 Forbidden**: Your API key doesn't have access to the memory service. Check your account permissions.
 
-**Connection errors**: Ensure you have internet access and can reach `studio.lyzr.ai`.
+**Connection errors**: Ensure you have internet access and can reach `memory.studio.lyzr.ai`.
 
 **Empty search results**: Memories are extracted asynchronously. Wait a few seconds after saving and try again.

@@ -60,7 +60,7 @@ Works with any agent that supports the [Agent Skills](https://agentskills.io) st
 |----------|---------|-------------|
 | `LYZR_API_KEY` | *(required)* | Your Cognis API key |
 | `COGNIS_OWNER_ID` | `$(whoami)` | Override user identifier |
-| `COGNIS_API_URL` | `https://studio.lyzr.ai` | Override API URL |
+| `COGNIS_API_URL` | `https://memory.studio.lyzr.ai` | Override API URL |
 
 ## Links
 

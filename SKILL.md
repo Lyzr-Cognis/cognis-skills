@@ -8,7 +8,7 @@ description: >
   prior conversations. Supports personal memory (per-user), team memory (shared across
   repo contributors), semantic search, and automatic context assembly.
 license: MIT
-compatibility: Requires curl and LYZR_API_KEY environment variable. Internet access to studio.lyzr.ai.
+compatibility: Requires curl and LYZR_API_KEY environment variable (get key at studio.lyzr.ai). Internet access to memory.studio.lyzr.ai.
 metadata:
   author: lyzr
   version: "1.0.0"

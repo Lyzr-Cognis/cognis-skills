@@ -1,6 +1,6 @@
 # Cognis REST API Reference
 
-Base URL: `https://studio.lyzr.ai`
+Base URL: `https://memory.studio.lyzr.ai`
 
 All requests require the `x-api-key` header with your `LYZR_API_KEY`.
 

@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-COGNIS_API_URL="${COGNIS_API_URL:-https://studio.lyzr.ai}"
+COGNIS_API_URL="${COGNIS_API_URL:-https://memory.studio.lyzr.ai}"
 
 # --- Help ---
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -38,7 +38,7 @@ fi
 # --- Validate ---
 if [[ -z "${LYZR_API_KEY:-}" ]]; then
   echo "Error: LYZR_API_KEY environment variable is not set." >&2
-  echo "Get your API key at https://studio.lyzr.ai" >&2
+  echo "Get your API key at https://memory.studio.lyzr.ai" >&2
   exit 1
 fi
 
@@ -123,7 +123,7 @@ EOF
 
   echo "Searching ${label} memories (agent_id: ${agent_id})..." >&2
 
-  RESPONSE=$(curl -s -w "\n%{http_code}" \
+  RESPONSE=$(curl -sL -w "\n%{http_code}" \
     -X POST "${COGNIS_API_URL}/v1/memories/search" \
     -H "Content-Type: application/json" \
     -H "x-api-key: ${LYZR_API_KEY}" \
