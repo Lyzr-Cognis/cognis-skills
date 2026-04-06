@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-COGNIS_API_URL="${COGNIS_API_URL:-https://memory.studio.lyzr.ai}"
+source "$(dirname "$0")/cognis-lib.sh"
 
 # --- Help ---
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -64,45 +64,7 @@ if [[ -z "$QUERY" ]]; then
 fi
 
 # --- Scoping ---
-
-get_git_root() {
-  git rev-parse --show-toplevel 2>/dev/null || echo ""
-}
-
-get_repo_name() {
-  local remote_url
-  remote_url="$(git remote get-url origin 2>/dev/null || echo "")"
-  if [[ -n "$remote_url" ]]; then
-    echo "$remote_url" | sed -E 's|.*/([^/]+?)(\.git)?$|\1|'
-  else
-    basename "$(get_git_root)" 2>/dev/null || basename "$(pwd)"
-  fi
-}
-
-sanitize() {
-  echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_-]/_/g; s/_+/_/g; s/^_//; s/_$//'
-}
-
-sha256_short() {
-  echo -n "$1" | shasum -a 256 | cut -c1-16
-}
-
 OWNER_ID="${COGNIS_OWNER_ID:-$(whoami)}"
-GIT_ROOT="$(get_git_root)"
-
-get_personal_agent_id() {
-  if [[ -n "$GIT_ROOT" ]]; then
-    echo "claudecode_$(sha256_short "$GIT_ROOT")"
-  else
-    echo "claudecode_$(sha256_short "$(pwd)")"
-  fi
-}
-
-get_repo_agent_id() {
-  local repo_name
-  repo_name="$(get_repo_name)"
-  echo "repo_$(sanitize "$repo_name")"
-}
 
 # --- Search function ---
 do_search() {
@@ -123,37 +85,32 @@ EOF
 
   echo "Searching ${label} memories (agent_id: ${agent_id})..." >&2
 
-  RESPONSE=$(curl -sL -w "\n%{http_code}" \
-    -X POST "${COGNIS_API_URL}/v1/memories/search" \
-    -H "Content-Type: application/json" \
-    -H "x-api-key: ${LYZR_API_KEY}" \
-    -d "$PAYLOAD")
-
-  HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-  BODY=$(echo "$RESPONSE" | sed '$d')
-
-  if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
-    echo "$BODY"
-  else
-    echo "Error: API returned HTTP ${HTTP_CODE} for ${label} search" >&2
-    echo "$BODY" >&2
-    return 1
-  fi
+  cognis_curl POST "${COGNIS_API_URL}/v1/memories/search" "$PAYLOAD"
 }
 
 # --- Execute search based on scope ---
 case "$SCOPE" in
   user)
-    do_search "$(get_personal_agent_id)" "personal"
+    RESULT=$(do_search "$(get_personal_agent_id)" "personal") || exit 1
+    wrap_untrusted_output "cognis-search/personal" "$RESULT"
     ;;
   repo)
-    do_search "$(get_repo_agent_id)" "team"
+    RESULT=$(do_search "$(get_repo_agent_id)" "team") || exit 1
+    wrap_untrusted_output "cognis-search/team" "$RESULT"
     ;;
   both)
-    echo '{"personal":'
-    do_search "$(get_personal_agent_id)" "personal"
-    echo ',"team":'
-    do_search "$(get_repo_agent_id)" "team"
-    echo '}'
+    PERSONAL=$(do_search "$(get_personal_agent_id)" "personal") || exit 1
+    TEAM=$(do_search "$(get_repo_agent_id)" "team") || exit 1
+    if command -v jq &>/dev/null; then
+      COMBINED=$(jq -n --argjson p "$PERSONAL" --argjson t "$TEAM" '{"personal": $p, "team": $t}')
+    else
+      COMBINED=$(python3 -c "
+import json, sys
+p = json.loads(sys.argv[1])
+t = json.loads(sys.argv[2])
+print(json.dumps({'personal': p, 'team': t}))
+" "$PERSONAL" "$TEAM")
+    fi
+    wrap_untrusted_output "cognis-search/both" "$COMBINED"
     ;;
 esac

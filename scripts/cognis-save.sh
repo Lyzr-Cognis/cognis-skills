@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-COGNIS_API_URL="${COGNIS_API_URL:-https://memory.studio.lyzr.ai}"
+source "$(dirname "$0")/cognis-lib.sh"
 
 # --- Help ---
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -58,45 +58,15 @@ if [[ -z "$CONTENT" ]]; then
 fi
 
 # --- Scoping ---
-
-get_git_root() {
-  git rev-parse --show-toplevel 2>/dev/null || echo ""
-}
-
-get_repo_name() {
-  local remote_url
-  remote_url="$(git remote get-url origin 2>/dev/null || echo "")"
-  if [[ -n "$remote_url" ]]; then
-    echo "$remote_url" | sed -E 's|.*/([^/]+?)(\.git)?$|\1|'
-  else
-    basename "$(get_git_root)" 2>/dev/null || basename "$(pwd)"
-  fi
-}
-
-sanitize() {
-  echo "$1" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_-]/_/g; s/_+/_/g; s/^_//; s/_$//'
-}
-
-sha256_short() {
-  echo -n "$1" | shasum -a 256 | cut -c1-16
-}
-
 OWNER_ID="${COGNIS_OWNER_ID:-$(whoami)}"
-GIT_ROOT="$(get_git_root)"
 
 if [[ "$TEAM_MODE" == true ]]; then
-  REPO_NAME="$(get_repo_name)"
-  AGENT_ID="repo_$(sanitize "$REPO_NAME")"
+  AGENT_ID="$(get_repo_agent_id)"
 else
-  if [[ -n "$GIT_ROOT" ]]; then
-    AGENT_ID="claudecode_$(sha256_short "$GIT_ROOT")"
-  else
-    AGENT_ID="claudecode_$(sha256_short "$(pwd)")"
-  fi
+  AGENT_ID="$(get_personal_agent_id)"
 fi
 
 # --- Build JSON payload ---
-# Escape content for JSON
 JSON_CONTENT="$(echo "$CONTENT" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read().strip()))')"
 
 PAYLOAD=$(cat <<EOF
@@ -111,20 +81,7 @@ EOF
 # --- API call ---
 echo "Saving memory (scope: $([ "$TEAM_MODE" = true ] && echo "team" || echo "personal"), agent_id: ${AGENT_ID})..." >&2
 
-RESPONSE=$(curl -sL -w "\n%{http_code}" \
-  -X POST "${COGNIS_API_URL}/v1/memories" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: ${LYZR_API_KEY}" \
-  -d "$PAYLOAD")
+BODY=$(cognis_curl POST "${COGNIS_API_URL}/v1/memories" "$PAYLOAD") || exit 1
 
-HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-BODY=$(echo "$RESPONSE" | sed '$d')
-
-if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
-  echo "Memory saved successfully." >&2
-  echo "$BODY"
-else
-  echo "Error: API returned HTTP ${HTTP_CODE}" >&2
-  echo "$BODY" >&2
-  exit 1
-fi
+echo "Memory saved successfully." >&2
+echo "$BODY"

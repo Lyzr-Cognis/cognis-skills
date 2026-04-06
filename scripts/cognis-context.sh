@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-COGNIS_API_URL="${COGNIS_API_URL:-https://memory.studio.lyzr.ai}"
+source "$(dirname "$0")/cognis-lib.sh"
 
 # --- Help ---
 if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
@@ -62,23 +62,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 # --- Scoping ---
-
-get_git_root() {
-  git rev-parse --show-toplevel 2>/dev/null || echo ""
-}
-
-sha256_short() {
-  echo -n "$1" | shasum -a 256 | cut -c1-16
-}
-
 OWNER_ID="${COGNIS_OWNER_ID:-$(whoami)}"
-GIT_ROOT="$(get_git_root)"
-
-if [[ -n "$GIT_ROOT" ]]; then
-  AGENT_ID="claudecode_$(sha256_short "$GIT_ROOT")"
-else
-  AGENT_ID="claudecode_$(sha256_short "$(pwd)")"
-fi
+AGENT_ID="$(get_personal_agent_id)"
 
 # --- Build messages array ---
 MESSAGES_JSON="[]"
@@ -109,19 +94,6 @@ EOF
 # --- API call ---
 echo "Fetching context (agent_id: ${AGENT_ID})..." >&2
 
-RESPONSE=$(curl -sL -w "\n%{http_code}" \
-  -X POST "${COGNIS_API_URL}/v1/memories/context" \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: ${LYZR_API_KEY}" \
-  -d "$PAYLOAD")
+BODY=$(cognis_curl POST "${COGNIS_API_URL}/v1/memories/context" "$PAYLOAD") || exit 1
 
-HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-BODY=$(echo "$RESPONSE" | sed '$d')
-
-if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
-  echo "$BODY"
-else
-  echo "Error: API returned HTTP ${HTTP_CODE}" >&2
-  echo "$BODY" >&2
-  exit 1
-fi
+wrap_untrusted_output "cognis-context" "$BODY"
